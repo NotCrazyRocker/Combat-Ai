@@ -1,5 +1,6 @@
 package com.grim.swordpvpai.client.observation;
 
+import com.grim.swordpvpai.client.bridge.WebSocketBridge;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
@@ -116,10 +117,11 @@ public final class ObservationFeature {
                 opponentVelocityChange));
         root.add("world", worldState(level, player));
         JsonObject transport = new JsonObject();
-        transport.addProperty("queued_observations_dropped", ObservationBridge.droppedCount());
+        transport.addProperty("protocol", "websocket");
+        transport.add("queued_observations_dropped", JsonNull.INSTANCE);
         root.add("transport", transport);
 
-        ObservationBridge.send(GSON.toJson(root));
+        WebSocketBridge.publishObservation(GSON.toJson(root), level.getGameTime());
     }
 
     private static JsonObject provenance() {

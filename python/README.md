@@ -1,9 +1,15 @@
-# Python endpoint
+# Python WebSocket agent
 
-No third-party packages required for Phase 1. Start the TCP receiver from the repository root:
+Install the WebSocket client dependency:
 
 ```powershell
-py -3 python\bridge\receiver.py
+py -3 -m pip install websockets
 ```
 
-The listener binds to `127.0.0.1:8765` and writes one observation object per line in `python/recordings/`. The mod uses the same host and port by default. See `../protocol/observation.schema.json` for the versioned payload contract.
+Start the agent from the repository root:
+
+```powershell
+py -3 python\bridge\websocket_agent.py
+```
+
+The agent connects to the mod's WebSocket server at `ws://127.0.0.1:8765`, records complete observations and actions in `python/recordings/`, and sends a temporary scripted policy. The mod binds to localhost only. See `../protocol/observation.schema.json` for the observation payload contract.

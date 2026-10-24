@@ -3,6 +3,7 @@ package com.grim.swordpvpai.client.actions;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
+import com.grim.swordpvpai.client.bridge.WebSocketBridge;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +37,7 @@ public final class ActionController {
 
         initialized = true;
 
-        ActionSocketServer.start();
+        WebSocketBridge.startBridge();
 
         ClientTickEvents.END_CLIENT_TICK.register(
                 ActionController::tick
@@ -45,12 +46,12 @@ public final class ActionController {
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             deactivateAutomation();
             INCOMING.clear();
-            ActionSocketServer.stop();
+            WebSocketBridge.stopBridge();
         });
     }
 
     /**
-     * Called from the TCP thread.
+     * Called from the WebSocket thread.
      * It does not access or modify Minecraft game state.
      */
     public static void submit(ActionCommand command) {
