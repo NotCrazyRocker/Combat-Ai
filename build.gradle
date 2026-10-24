@@ -27,7 +27,8 @@ dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings loom.officialMojangMappings()
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	include(implementation("org.java-websocket:Java-WebSocket:1.5.7"))
+	clientImplementation("org.java-websocket:Java-WebSocket:1.5.7")
+	include("org.java-websocket:Java-WebSocket:1.5.7")
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"

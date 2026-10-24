@@ -42,6 +42,16 @@ In a second terminal, launch the development client:
 
 The WebSocket server binds to `127.0.0.1:8765` by default and can be configured with `-Dswordpvpai.websocket.port=<port>`. The Python agent records observations and actions under `python/recordings/`.
 
+## VS Code Java project refresh
+
+The WebSocket library is a client-only Gradle dependency. If VS Code still marks `org.java_websocket` unresolved after changing dependencies, regenerate the IDE classpath and refresh the Java project:
+
+```powershell
+.\gradlew.bat eclipse
+```
+
+Then run **Java: Clean Java Language Server Workspace** from the Command Palette and reopen the workspace.
+
 ## Important measurement limits
 
 1. The client sees the world state available to its Minecraft client. In integrated-server worlds, `server_tick` comes from `MinecraftServer.getTickCount()` at the end of each server tick. A remote multiplayer client cannot inspect the remote server's counter, so `server_tick` remains `null` there; `level_game_time` is the client's world-time value.

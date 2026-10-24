@@ -1,6 +1,7 @@
 package com.grim.swordpvpai.client.bridge;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -20,7 +21,7 @@ public final class WebSocketBridge extends WebSocketServer {
     public static final int PROTOCOL_VERSION = 1;
     public static final String AGENT_ID = "client_player";
 
-    private static final Gson GSON = new Gson();
+    private static final Gson GSON = new GsonBuilder().serializeNulls().create();
     private static WebSocketBridge instance;
 
     private final String matchId = UUID.randomUUID().toString();
