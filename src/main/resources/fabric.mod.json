@@ -1,0 +1,28 @@
+{
+	"schemaVersion": 1,
+	"id": "sword-pvp-ai",
+	"version": "${version}",
+	"name": "Sword PvP AI",
+	"description": "A Fabric mod for sword PvP combat AI.",
+	"contact": {
+		"sources": "https://github.com/NotCrazyRocker/Combat-Ai",
+		"issues": "https://github.com/NotCrazyRocker/Combat-Ai/issues"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/sword-pvp-ai/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.grim.swordpvpai.SwordPvPAI"
+		],
+		"client": [
+			"com.grim.swordpvpai.client.SwordPvPAIClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
