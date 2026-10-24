@@ -174,20 +174,56 @@ def main():
                     },
                 )
 
+                # Generate a real attack click, then keep attack held briefly.
                 sequence = run_segment(
                     writer,
                     sequence,
-                    "Hold attack",
+                    "Attack click",
                     complete_buttons(attack=True),
-                    15,
+                    1,
+                    press=("attack",),
                 )
 
                 sequence = run_segment(
                     writer,
                     sequence,
-                    "Use held item",
+                    "Hold attack",
+                    complete_buttons(attack=True),
+                    10,
+                )
+
+                sequence = run_segment(
+                    writer,
+                    sequence,
+                    "Release attack",
+                    complete_buttons(),
+                    3,
+                )
+
+                # Send a right-click event and hold use-item afterward.
+                sequence = run_segment(
+                    writer,
+                    sequence,
+                    "Use item click",
+                    complete_buttons(use_item=True),
+                    1,
+                    press=("use_item",),
+                )
+
+                sequence = run_segment(
+                    writer,
+                    sequence,
+                    "Hold use item",
                     complete_buttons(use_item=True),
                     10,
+                )
+
+                sequence = run_segment(
+                    writer,
+                    sequence,
+                    "Release use item",
+                    complete_buttons(),
+                    5,
                 )
 
                 sequence = run_segment(

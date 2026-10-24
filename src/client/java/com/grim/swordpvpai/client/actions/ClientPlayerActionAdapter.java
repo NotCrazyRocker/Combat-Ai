@@ -1,8 +1,9 @@
 package com.grim.swordpvpai.client.actions;
 
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.Mth;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.util.Mth;
 
 public final class ClientPlayerActionAdapter
         implements ActionExecutionAdapter {
@@ -19,6 +20,7 @@ public final class ClientPlayerActionAdapter
             return;
         }
 
+        // Persistent movement state.
         mc.options.keyUp.setDown(b.forward);
         mc.options.keyDown.setDown(b.backward);
         mc.options.keyLeft.setDown(b.left);
@@ -28,6 +30,8 @@ public final class ClientPlayerActionAdapter
         mc.options.keySprint.setDown(b.sprint);
         mc.options.keyShift.setDown(b.sneak);
 
+        // Persistent mouse-button state.
+        // A new attack click still requires a one-shot event.
         mc.options.keyAttack.setDown(b.attack);
         mc.options.keyUse.setDown(b.use_item);
     }
@@ -57,12 +61,9 @@ public final class ClientPlayerActionAdapter
             pitch = player.getXRot() + (float) aim.pitch;
         }
 
-        yaw = Mth.wrapDegrees(yaw);
-        pitch = Mth.clamp(pitch, -90.0F, 90.0F);
-
-        player.setYRot(yaw);
-        player.setYHeadRot(yaw);
-        player.setXRot(pitch);
+        player.setYRot(Mth.wrapDegrees(yaw));
+        player.setYHeadRot(Mth.wrapDegrees(yaw));
+        player.setXRot(Mth.clamp(pitch, -90.0F, 90.0F));
     }
 
     @Override
@@ -73,23 +74,25 @@ public final class ClientPlayerActionAdapter
             return;
         }
 
-        /*
-         * These presses are applied after persistent button states.
-         * On the next tick, applyButtons() restores the requested
-         * persistent state, so a one-time press is not held forever.
-         */
         switch (action.toLowerCase()) {
             case "jump" ->
+                // One-tick jump press; subsequent button state decides
+                // whether jump remains held.
                 mc.options.keyJump.setDown(true);
 
             case "attack" ->
-                mc.options.keyAttack.setDown(true);
+                // Generate an actual click event for vanilla to consume.
+                KeyMapping.click(
+                        mc.options.keyAttack.getDefaultKey()
+                );
 
             case "use_item" ->
-                mc.options.keyUse.setDown(true);
+                KeyMapping.click(
+                        mc.options.keyUse.getDefaultKey()
+                );
 
             default -> {
-                // Ignore unsupported one-time actions.
+                // Ignore unknown one-shot actions.
             }
         }
     }

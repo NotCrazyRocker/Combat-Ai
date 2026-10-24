@@ -4,6 +4,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public final class ActionController {
@@ -18,9 +20,11 @@ public final class ActionController {
     private static ActionCommand.Buttons activeButtons =
             new ActionCommand.Buttons();
 
-    private static long clientTick = 0;
-    private static long expiresAtTick = 0;
-    private static boolean initialized = false;
+    private static boolean initialized;
+    private static boolean automationActive;
+
+    private static long clientTick;
+    private static long expiresAtTick;
 
     private ActionController() {
     }
@@ -39,22 +43,23 @@ public final class ActionController {
         );
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
-            releaseAndClear();
+            deactivateAutomation();
+            INCOMING.clear();
             ActionSocketServer.stop();
         });
     }
 
     /**
-     * Called by the TCP receiver thread.
-     * Never perform game-state changes from this method.
+     * Called from the TCP thread.
+     * It does not access or modify Minecraft game state.
      */
     public static void submit(ActionCommand command) {
         if (command == null) {
             return;
         }
 
-        // Keep the queue bounded if Python sends too quickly.
         if (!INCOMING.offer(command)) {
+            // Bound memory use if the producer gets far ahead.
             INCOMING.poll();
             INCOMING.offer(command);
         }
@@ -63,41 +68,43 @@ public final class ActionController {
     private static void tick(Minecraft client) {
         clientTick++;
 
-        /*
-         * Never let incoming automation control a menu, inventory
-         * screen, title screen, or player who is not in a world.
-         */
+        // Never control the player while a GUI is open or no world exists.
         if (client.player == null
                 || client.level == null
                 || client.screen != null) {
-            releaseAndClear();
+            INCOMING.clear();
+            deactivateAutomation();
             return;
         }
 
         /*
-         * Drain any backlog and apply the newest full desired state.
-         * This avoids replaying a long sequence of stale movement
-         * commands after a temporary delay.
+         * Drain the batch.
+         *
+         * Persistent button state comes from the newest command.
+         * One-time presses from every received command are preserved.
          */
-        ActionCommand newest = null;
-        ActionCommand pending;
+        List<ActionCommand> batch = new ArrayList<>();
+        ActionCommand command;
 
-        while ((pending = INCOMING.poll()) != null) {
-            newest = pending;
+        while ((command = INCOMING.poll()) != null) {
+            batch.add(command);
         }
 
-        if (newest != null) {
-            if (newest.buttons == null) {
-                newest.buttons = new ActionCommand.Buttons();
-            }
+        ActionCommand newest = batch.isEmpty()
+                ? null
+                : batch.get(batch.size() - 1);
 
-            activeButtons = newest.buttons;
+        if (newest != null) {
+            activeButtons = newest.buttons != null
+                    ? newest.buttons
+                    : new ActionCommand.Buttons();
 
             int duration = Math.max(
                     1,
                     Math.min(newest.valid_for_ticks, 20)
             );
 
+            automationActive = true;
             expiresAtTick = clientTick + duration;
 
             if (newest.aim != null) {
@@ -110,34 +117,47 @@ public final class ActionController {
         }
 
         /*
-         * Expiration provides a failsafe if Python crashes or stops
-         * sending updates. The keys are then automatically released.
+         * No new command arrived before the lease expired:
+         * release AI-controlled buttons once, then leave native
+         * keyboard controls alone.
          */
-        if (clientTick >= expiresAtTick) {
-            activeButtons = new ActionCommand.Buttons();
+        if (automationActive && clientTick >= expiresAtTick) {
+            deactivateAutomation();
+            return;
         }
 
-        // Apply persistent buttons every client tick.
-        ADAPTER.applyButtons(activeButtons);
+        /*
+         * Critical fix:
+         * do not modify key states when automation is inactive.
+         * This preserves ordinary manual movement before Python
+         * starts and after its commands stop.
+         */
+        if (automationActive) {
+            ADAPTER.applyButtons(activeButtons);
+        }
 
         /*
-         * Execute one-time presses only for the newest command.
-         * Do not replay presses from commands skipped during backlog
-         * draining.
+         * Process one-time events from all commands in this batch.
+         * Do not execute only the newest command's press list.
          */
-        if (newest != null && newest.press != null) {
-            for (String action : newest.press) {
+        for (ActionCommand received : batch) {
+            if (received.press == null) {
+                continue;
+            }
+
+            for (String action : received.press) {
                 ADAPTER.applyOneShot(action);
             }
         }
     }
 
-    private static void releaseAndClear() {
-        INCOMING.clear();
+    private static void deactivateAutomation() {
+        if (automationActive) {
+            ADAPTER.releaseAll();
+        }
 
-        activeButtons = new ActionCommand.Buttons();
+        automationActive = false;
         expiresAtTick = 0;
-
-        ADAPTER.releaseAll();
+        activeButtons = new ActionCommand.Buttons();
     }
 }
