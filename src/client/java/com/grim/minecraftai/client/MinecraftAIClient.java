@@ -39,7 +39,7 @@ public class MinecraftAIClient implements ClientModInitializer {
 		);
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			ObservationBuilder.beginTick();
+			ObservationBuilder.beginTick(client);
 			while (toggleAIControlKey.consumeClick()) {
 				aiControlEnabled = !aiControlEnabled;
 				if (!aiControlEnabled) {

@@ -1,6 +1,7 @@
 package com.grim.minecraftai.client.mixin;
 
 import com.grim.minecraftai.client.MinecraftAIClient;
+import com.grim.minecraftai.client.PlayerAttackAccess;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
@@ -12,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Player.class)
-abstract class PlayerAttackMixin {
+abstract class PlayerAttackMixin implements PlayerAttackAccess {
 	@Shadow public abstract float getAttackStrengthScale(float adjustTicks);
 
 	@Invoker("canCriticalAttack")
@@ -20,6 +21,11 @@ abstract class PlayerAttackMixin {
 
 	@Invoker("isSweepAttack")
 	protected abstract boolean minecraftai$isSweepAttack(boolean fullyCharged, boolean critical, boolean sprintKnockback);
+
+	@Override
+	public boolean minecraftai$canCriticalNow(Entity target) {
+		return minecraftai$canCriticalAttack(target);
+	}
 
 	@Inject(method = "attack", at = @At("HEAD"))
 	private void minecraftai$recordAttackAttempt(Entity target, CallbackInfo ci) {

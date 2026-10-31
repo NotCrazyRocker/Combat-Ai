@@ -138,7 +138,7 @@ final class PythonControlServer {
 			 BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8))) {
 			RemoteInputDiagnostics.resetAppliedAction();
 			synchronized (this) {
-				active.sendReliable("{\"type\":\"ready\",\"protocol\":2,\"observation_schema\":\"minecraftai.pvp.v1\",\"ai_control_enabled\":" + MinecraftAIClient.isAIControlEnabled() + "}");
+				active.sendReliable("{\"type\":\"ready\",\"protocol\":2,\"observation_schema\":\"" + ObservationBuilder.SCHEMA + "\",\"ai_control_enabled\":" + MinecraftAIClient.isAIControlEnabled() + "}");
 				session = active;
 			}
 			long lastSequence = -1;
