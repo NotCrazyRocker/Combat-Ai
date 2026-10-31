@@ -1,0 +1,13 @@
+{
+	"required": true,
+	"package": "com.grim.minecraftai.client.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"KeyMappingMixin",
+		"PlayerAttackMixin",
+		"ClientPacketListenerMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

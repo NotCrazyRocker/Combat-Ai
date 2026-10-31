@@ -32,6 +32,13 @@ bin/
 
 run/
 
+# node
+
+node_modules/
+npm-debug.log*
+__pycache__/
+*.py[cod]
+
 # java
 
 hs_err_*.log

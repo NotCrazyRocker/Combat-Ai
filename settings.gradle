@@ -9,5 +9,5 @@ pluginManagement {
 	}
 }
 
-// Should match your modid
-rootProject.name = 'sword-pvp-ai'
+// Keep the Gradle project name aligned with the mod id.
+rootProject.name = 'minecraft-ai'

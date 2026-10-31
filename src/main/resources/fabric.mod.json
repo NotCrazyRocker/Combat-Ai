@@ -1,24 +1,26 @@
 {
 	"schemaVersion": 1,
-	"id": "sword-pvp-ai",
+	"id": "minecraft-ai",
 	"version": "${version}",
-	"name": "Sword PvP AI",
-	"description": "A Fabric mod for sword PvP combat AI.",
-	"contact": {
-		"sources": "https://github.com/NotCrazyRocker/Combat-Ai",
-		"issues": "https://github.com/NotCrazyRocker/Combat-Ai/issues"
-	},
+	"name": "MinecraftAI",
+	"description": "AI tools and gameplay for Minecraft.",
+	"authors": ["Grim"],
 	"license": "CC0-1.0",
-	"icon": "assets/sword-pvp-ai/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.grim.swordpvpai.SwordPvPAI"
+			"com.grim.minecraftai.MinecraftAI"
 		],
 		"client": [
-			"com.grim.swordpvpai.client.SwordPvPAIClient"
+			"com.grim.minecraftai.client.MinecraftAIClient"
 		]
 	},
+	"mixins": [
+		{
+			"config": "minecraft-ai.client.mixins.json",
+			"environment": "client"
+		}
+	],
 	"depends": {
 		"fabricloader": ">=0.20.1",
 		"minecraft": "~1.21.11",
