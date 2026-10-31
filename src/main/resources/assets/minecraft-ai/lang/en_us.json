@@ -1,5 +1,5 @@
 {
 	"key.minecraft-ai.toggle_ai_control": "Toggle AI Control",
-	"key.minecraft-ai.toggle_debug_overlay": "Toggle Full Diagnostics Overlay",
+	"key.minecraft-ai.toggle_debug_overlay": "Toggle Opponent Diagnostics (F12)",
 	"key.category.minecraft-ai.main": "MinecraftAI"
 }

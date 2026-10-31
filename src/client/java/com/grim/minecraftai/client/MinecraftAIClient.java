@@ -35,7 +35,7 @@ public class MinecraftAIClient implements ClientModInitializer {
 				new KeyMapping(TOGGLE_KEY_TRANSLATION, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, category)
 		);
 		KeyMapping toggleDebugOverlayKey = KeyBindingHelper.registerKeyBinding(
-				new KeyMapping(DEBUG_OVERLAY_KEY_TRANSLATION, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F8, category)
+				new KeyMapping(DEBUG_OVERLAY_KEY_TRANSLATION, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F12, category)
 		);
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {

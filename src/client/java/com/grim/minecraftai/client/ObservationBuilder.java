@@ -46,6 +46,7 @@ final class ObservationBuilder {
 
 	private static long tick;
 	private static volatile DebugProjection debugProjection = DebugProjection.EMPTY;
+	private static volatile List<OpponentStatus> detectedOpponents = List.of();
 
 	// ---- combat history
 	private static long lastOutgoingHitTick = -1;
@@ -125,6 +126,7 @@ final class ObservationBuilder {
 			resetSelfTracking();
 			resetTarget();
 			targetId = -1;
+			detectedOpponents = List.of();
 			eventSelfHealthDelta = 0.0;
 			attackAttemptThisTick = false;
 			return;
@@ -202,24 +204,33 @@ final class ObservationBuilder {
 	}
 
 	private static boolean eligible(Player self, Player p) {
-		return p != self && p.isAlive() && !p.isSpectator() && !self.isAlliedTo(p);
+		// Server scoreboard teams are not reliable opponent metadata: duel servers
+		// may put every player on the same team for collision/nameplate behavior.
+		// Track every other live player entity and let visibility/selection decide
+		// which one supplies the legacy single-target observation fields.
+		return p != self && p.isAlive() && !p.isSpectator();
 	}
 
 	private static Player selectTarget(Minecraft client, Player self) {
+		List<? extends Player> candidates = client.level.players().stream()
+				.filter(p -> eligible(self, p))
+				.sorted(Comparator.comparingDouble(self::distanceToSqr))
+				.toList();
+		List<? extends Player> visible = candidates.stream().filter(self::hasLineOfSight).toList();
 		Player current = null;
 		if (targetId >= 0) {
-			for (Player p : client.level.players()) {
+			for (Player p : candidates) {
 				if (p.getId() == targetId && eligible(self, p)) { current = p; break; }
 			}
 		}
-		boolean currentVisible = current != null && self.hasLineOfSight(current);
-		if (current != null && (currentVisible || tick - lastSeenTick <= TARGET_SWITCH_AFTER_TICKS)) {
-			return current;
-		}
-		Player best = client.level.players().stream()
-				.filter(p -> eligible(self, p) && self.hasLineOfSight(p))
-				.min(Comparator.comparingDouble(self::distanceToSqr)).orElse(null);
-		return best != null ? best : current;
+		boolean currentVisible = current != null && visible.contains(current);
+		Player selected = currentVisible ? current
+				: !visible.isEmpty() ? visible.get(0)
+				: current != null && tick - lastSeenTick <= TARGET_SWITCH_AFTER_TICKS ? current : null;
+		detectedOpponents = candidates.stream().map(p -> new OpponentStatus(
+				p.getId(), p.getName().getString(), self.hasLineOfSight(p), self.distanceTo(p),
+				selected != null && selected.getId() == p.getId())).toList();
+		return selected;
 	}
 
 	private static void resetTarget() {
@@ -809,8 +820,10 @@ final class ObservationBuilder {
 		DebugProjection projection = client.player == null ? DebugProjection.EMPTY : debugProjection;
 		int textColor = 0xFFFFFFFF;
 		int y = 39 + verticalOffset;
+		List<OpponentStatus> opponents = detectedOpponents;
+		int shownOpponents = Math.min(8, opponents.size());
 		graphics.fill(4, 34 + verticalOffset, Math.max(8, Math.min(width - 4, 760)),
-				Math.min(height - 4, 175 + verticalOffset), 0x90000000);
+				Math.min(height - 4, 187 + verticalOffset + shownOpponents * 11), 0x90000000);
 		String targetState;
 		if (projection.targetValid) {
 			targetState = String.format(java.util.Locale.ROOT,
@@ -820,10 +833,24 @@ final class ObservationBuilder {
 		} else if (trackedTarget != null) {
 			targetState = "Target: tracked, not visible (seen " + elapsed(lastSeenTick) + " ticks ago)";
 		} else {
-			targetState = "Target: none (alive, non-allied player required)";
+			targetState = "Target: none (alive, non-spectator player required)";
 		}
-		graphics.drawString(client.font, "MinecraftAI diagnostics — F8 hides this panel", 8, y, 0xFF66FFFF, true); y += 12;
+		graphics.drawString(client.font, "MinecraftAI diagnostics — F12 hides this panel", 8, y, 0xFF66FFFF, true); y += 12;
 		graphics.drawString(client.font, targetState, 8, y, textColor, true); y += 12;
+		long visibleCount = opponents.stream().filter(OpponentStatus::visible).count();
+		graphics.drawString(client.font, "Detected opponents: " + opponents.size() + " (visible: " + visibleCount + ")",
+				8, y, 0xFF66FFFF, true); y += 12;
+		for (int i = 0; i < shownOpponents; i++) {
+			OpponentStatus opponent = opponents.get(i);
+			String row = String.format(java.util.Locale.ROOT, "%s%s  %s [id=%d]  %.1fm",
+					opponent.selected() ? "> " : "  ", opponent.name(),
+					opponent.visible() ? "VISIBLE" : "occluded", opponent.id(), opponent.distance());
+			graphics.drawString(client.font, row, 8, y, opponent.selected() ? 0xFF55FF55 : textColor, true); y += 11;
+		}
+		if (opponents.size() > shownOpponents) {
+			graphics.drawString(client.font, "... and " + (opponents.size() - shownOpponents) + " more",
+					8, y, textColor, true); y += 11;
+		}
 		String center = projection.centerValid
 				? String.format(java.util.Locale.ROOT,
 						"Center screen UV: x=%.3f y=%.3f | yaw error to center: %+.1f° | closing %+.3f/tick",
@@ -907,4 +934,5 @@ final class ObservationBuilder {
 	}
 	private record AttackAttempt(long tick, boolean critical, boolean knockback, boolean sweep,
 			boolean targetBlocking) { }
+	private record OpponentStatus(int id, String name, boolean visible, double distance, boolean selected) { }
 }
